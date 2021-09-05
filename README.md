@@ -1,3 +1,5 @@
+![ci](https://github.com/JacobALundgren/rpg-system-2d/actions/workflows/ci/badge.svg)
+
 # rpg-system-2d
 System for 2D role-playing games
 

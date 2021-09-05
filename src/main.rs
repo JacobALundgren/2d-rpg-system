@@ -1,21 +1,22 @@
+mod area;
+mod player;
+
+use crate::area::AreaPlugin;
+use crate::player::Player;
 use bevy::prelude::*;
-use bevy::render::pass::ClearColor;
 
 const WORLD_WIDTH: f32 = 1280.;
 const WORLD_HEIGHT: f32 = 720.;
-const PLAYER_SIDE: f32 = 80.;
+const PLAYER_SIDE: f32 = 60.;
 
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
-        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+        .add_plugin(AreaPlugin)
         .add_startup_system(setup.system())
         .add_system(movement_system.system())
         .run();
 }
-
-#[derive(Default)]
-struct Player {}
 
 fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
