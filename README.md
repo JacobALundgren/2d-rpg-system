@@ -1,4 +1,4 @@
-![ci](https://github.com/JacobALundgren/rpg-system-2d/actions/workflows/ci/badge.svg)
+![ci](https://github.com/JacobALundgren/rpg-system-2d/actions/workflows/ci.yml/badge.svg)
 
 # rpg-system-2d
 System for 2D role-playing games
