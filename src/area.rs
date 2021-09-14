@@ -5,38 +5,13 @@ use crate::player::Player;
 
 pub struct AreaPlugin;
 
-const AREA_COUNT: usize = 2;
-
-struct GameAreas {
-    areas: [Area; AREA_COUNT],
+pub struct GameAreas {
+    areas: Vec<Area>,
 }
 
-impl Default for GameAreas {
-    fn default() -> Self {
-        let passage_east = Passage {
-            transform: Transform::from_xyz(1280. / 2. - 15., 0., 1.),
-            sprite: Sprite::new(Vec2::new(30., 80.)),
-            destination: 1,
-            destination_transform: Transform::from_xyz(-1280. / 2. + 75., 0., 1.),
-        };
-        let passage_west = Passage {
-            transform: Transform::from_xyz(-1280. / 2. + 15., 0., 1.),
-            sprite: Sprite::new(Vec2::new(30., 80.)),
-            destination: 0,
-            destination_transform: Transform::from_xyz(1280. / 2. - 75., 0., 1.),
-        };
-        GameAreas {
-            areas: [
-                Area {
-                    color: Color::rgb(0.1, 0.1, 0.1),
-                    passages: vec![passage_east],
-                },
-                Area {
-                    color: Color::rgb_u8(0, 51, 0),
-                    passages: vec![passage_west],
-                },
-            ],
-        }
+impl GameAreas {
+    pub fn new(areas: Vec<Area>) -> Self {
+        Self { areas }
     }
 }
 
@@ -58,8 +33,7 @@ fn area_startup_system(
 
 impl Plugin for AreaPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.insert_resource(GameAreas::default())
-            .insert_resource(ClearColor(Color::rgb(1., 0., 0.)))
+        app.insert_resource(ClearColor(Color::rgb(1., 0., 0.)))
             .add_event::<AreaTransitionEvent>()
             .add_startup_system(area_startup_system.system())
             .add_system(area_transition_check.system())
@@ -68,11 +42,27 @@ impl Plugin for AreaPlugin {
 }
 
 #[derive(Clone)]
-struct Passage {
+pub struct Passage {
     transform: Transform,
     sprite: Sprite,
     destination: usize,
     destination_transform: Transform,
+}
+
+impl Passage {
+    pub fn new(
+        transform: Transform,
+        sprite: Sprite,
+        destination: usize,
+        destination_transform: Transform,
+    ) -> Self {
+        Passage {
+            transform,
+            sprite,
+            destination,
+            destination_transform,
+        }
+    }
 }
 
 impl PartialEq for Passage {
@@ -88,12 +78,16 @@ impl PartialEq for Passage {
 struct PassageDestination(usize, Transform);
 
 #[derive(Clone)]
-struct Area {
+pub struct Area {
     color: Color,
     passages: Vec<Passage>,
 }
 
 impl Area {
+    pub fn new(color: Color, passages: Vec<Passage>) -> Self {
+        Area { color, passages }
+    }
+
     fn load(
         &self,
         commands: &mut Commands,
@@ -154,7 +148,7 @@ fn area_transition(
     passages: Query<(Entity, &PassageDestination)>,
 ) {
     if let Some(destination) = ev_area_transition.iter().next() {
-        assert!(destination.0 .0 < AREA_COUNT);
+        assert!(destination.0 .0 < game_areas.areas.len());
         for passage in passages.iter() {
             commands.entity(passage.0).despawn();
         }
@@ -294,7 +288,8 @@ mod tests {
                     color: Color::rgb(0.251, 0.521, 0.382),
                     passages: vec![passage_in1, passage_in2],
                 },
-            ],
+            ]
+            .into(),
         }
     }
 
