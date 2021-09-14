@@ -1,5 +1,5 @@
 [package]
-name = "rpg-system-2d"
+name = "rpg_system_2d"
 version = "0.1.0"
 edition = "2018"
 
@@ -7,3 +7,7 @@ edition = "2018"
 
 [dependencies]
 bevy = { version = "0.5.0", features = ["dynamic"] }
+
+[[example]]
+name = "prototype"
+path = "examples/prototype/src.rs"
