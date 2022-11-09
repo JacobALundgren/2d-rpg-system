@@ -8,13 +8,21 @@ use rpg_system_2d::{
 fn get_game_areas() -> GameAreas {
     let passage_east = Passage::new(
         Transform::from_xyz(1280. / 2. - 15., 0., 1.),
-        Sprite{ custom_size: Some(Vec2::new(30., 80.)), ..default()},
+        Sprite {
+            color: Color::rgb(0., 1., 0.),
+            custom_size: Some(Vec2::new(30., 80.)),
+            ..default()
+        },
         1.into(),
         Transform::from_xyz(-1280. / 2. + 75., 0., 1.),
     );
     let passage_west = Passage::new(
         Transform::from_xyz(-1280. / 2. + 15., 0., 1.),
-        Sprite{ custom_size: Some(Vec2::new(30., 80.)), ..default()},
+        Sprite {
+            color: Color::rgb(0., 1., 0.),
+            custom_size: Some(Vec2::new(30., 80.)),
+            ..default()
+        },
         0.into(),
         Transform::from_xyz(1280. / 2. - 75., 0., 1.),
     );
@@ -39,7 +47,7 @@ fn create_enemy(mut commands: Commands) {
     commands
         .spawn_bundle(SpriteBundle {
             transform: Transform::from_xyz(260., 260., 0.),
-            sprite: Sprite{
+            sprite: Sprite {
                 color: Color::rgb(1., 0., 0.),
                 custom_size: Some(Vec2::new(60., 60.)),
                 ..default()

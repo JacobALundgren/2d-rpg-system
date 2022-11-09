@@ -46,7 +46,7 @@ impl Plugin for AreaPlugin {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Passage {
     transform: Transform,
     sprite: Sprite,
@@ -93,11 +93,7 @@ impl Area {
         Area { color, passages }
     }
 
-    fn load(
-        &self,
-        commands: &mut Commands,
-        background: &mut ResMut<ClearColor>,
-    ) {
+    fn load(&self, commands: &mut Commands, background: &mut ResMut<ClearColor>) {
         background.0 = self.color;
         for passage in &self.passages {
             commands
@@ -157,10 +153,7 @@ fn area_transition(
         if let Ok((_, mut transform)) = player_query.get_single_mut() {
             transform.translation = destination.0 .1.translation;
         }
-        game_areas.areas[destination.0 .0 .0].load(
-            &mut commands,
-            &mut background,
-        );
+        game_areas.areas[destination.0 .0 .0].load(&mut commands, &mut background);
     }
 }
 
@@ -187,44 +180,42 @@ mod tests {
     };
     use crate::enemy::Enemy;
     use crate::player::Player;
-    use bevy::{
-        app::{App, Events},
-        asset::Handle,
-        ecs::{
-            schedule::{Schedule, Stage, SystemStage},
-            system::{IntoSystem, System},
-            world::World,
-        },
-        math::f32::Vec2,
-        render::{color::Color, draw::Visible, pass::ClearColor},
-        sprite::{ColorMaterial, Sprite},
-        transform::components::Transform,
+    use bevy::prelude::{
+        App, ClearColor, Color, Events, IntoSystem, MinimalPlugins, Schedule, Sprite, SystemStage,
+        Transform, Vec2, Visibility, World,
     };
+    use bevy::utils::default;
 
-    fn run_system<S: System<In = (), Out = ()>>(world: &mut World, system: S) {
+    fn run_system<S: IntoSystem<(), (), P>, P: Send + Sync + 'static>(
+        world: &mut World,
+        system: S,
+    ) {
         let mut schedule = Schedule::default();
-        let mut update = SystemStage::parallel();
+        let mut update = SystemStage::single_threaded();
         update.add_system(system);
         schedule.add_stage("update", update);
-        schedule.run(world);
+        schedule.run_once(world);
     }
 
-    fn get_test_app_builder() -> App {
+    fn get_test_app() -> App {
         let mut ret = App::default();
-        ret.add_plugin(bevy::core::CorePlugin::default());
+        ret.add_plugins(MinimalPlugins);
         ret.add_plugin(bevy::asset::AssetPlugin::default());
         ret
     }
 
     #[test]
     fn transitions_are_detected() {
-        let mut app_builder = get_test_app_builder();
-        let mut world = app_builder.world_mut();
+        let mut app = get_test_app();
+        let mut world = &mut app.world;
         world
             .spawn()
             .insert(Player::default())
             .insert(Transform::from_xyz(10., 10., 1.))
-            .insert(Sprite{custom_size: Some(Vec2::new(2.1, 2.1)), ..default()});
+            .insert(Sprite {
+                custom_size: Some(Vec2::new(2.1, 2.1)),
+                ..default()
+            });
         world
             .spawn()
             .insert(PassageDestination(
@@ -232,7 +223,10 @@ mod tests {
                 Transform::from_xyz(20., 20., 2.),
             ))
             .insert(Transform::from_xyz(12., 12., 100.))
-            .insert(Sprite{custom_size: Some(Vec2::new(2., 2.)), ..default()});
+            .insert(Sprite {
+                custom_size: Some(Vec2::new(2., 2.)),
+                ..default()
+            });
         world.insert_resource(Events::<AreaTransitionEvent>::default());
         run_system(&mut world, super::area_transition_check);
         let area_transition_events = world.get_resource::<Events<AreaTransitionEvent>>().unwrap();
@@ -250,25 +244,34 @@ mod tests {
 
     #[test]
     fn multiple_collisions_send_one_event() {
-        let mut app_builder = get_test_app_builder();
-        let mut world = app_builder.world_mut();
+        let mut app = get_test_app();
+        let mut world = &mut app.world;
         world
             .spawn()
             .insert(Player::default())
             .insert(Transform::from_xyz(10., 10., 1.))
-            .insert(Sprite{custom_size: Some(Vec2::new(2.1, 2.1)), ..default()});
+            .insert(Sprite {
+                custom_size: Some(Vec2::new(2.1, 2.1)),
+                ..default()
+            });
         let destination1 = PassageDestination(1.into(), Transform::from_xyz(20., 20., 2.));
         world
             .spawn()
             .insert(destination1)
             .insert(Transform::from_xyz(12., 12., 100.))
-            .insert(Sprite{custom_size: Some(Vec2::new(2., 2.)), ..default()});
+            .insert(Sprite {
+                custom_size: Some(Vec2::new(2., 2.)),
+                ..default()
+            });
         let destination2 = PassageDestination(2.into(), Transform::from_xyz(25., 25., 10.));
         world
             .spawn()
             .insert(destination2)
             .insert(Transform::from_xyz(8., 8., 100.))
-            .insert(Sprite{custom_size: Some(Vec2::new(2., 2.)), ..default()});
+            .insert(Sprite {
+                custom_size: Some(Vec2::new(2., 2.)),
+                ..default()
+            });
         world.insert_resource(Events::<AreaTransitionEvent>::default());
         run_system(&mut world, super::area_transition_check);
         let area_transition_events = world.get_resource::<Events<AreaTransitionEvent>>().unwrap();
@@ -340,13 +343,8 @@ mod tests {
     fn check_area_is_loaded(world: &mut World, area: &Area) {
         assert_eq!(area.color, world.get_resource::<ClearColor>().unwrap().0);
         let mut expected_passages = area.passages.clone();
-        let mut passage_query = world.query::<(
-            &PassageDestination,
-            &Handle<ColorMaterial>,
-            &Transform,
-            &Sprite,
-        )>();
-        for (dest, _, transform, sprite) in passage_query.iter(&world) {
+        let mut passage_query = world.query::<(&PassageDestination, &Transform, &Sprite)>();
+        for (dest, transform, sprite) in passage_query.iter(&world) {
             let pos = expected_passages.iter().position(|passage| {
                 *passage
                     == Passage {
@@ -364,16 +362,17 @@ mod tests {
 
     #[test]
     fn area_transition() {
-        let mut app_builder = get_test_app_builder();
-        app_builder.add_plugin(bevy::render::RenderPlugin::default());
-        app_builder.add_plugin(bevy::sprite::SpritePlugin::default());
-        let mut world = app_builder.world_mut();
+        let mut app = get_test_app();
+        let mut world = &mut app.world;
         world.insert_resource(get_test_areas());
         world
             .spawn()
             .insert(Player::default())
             .insert(Transform::from_xyz(10., 10., 1.))
-            .insert(Sprite{custom_size: Some(Vec2::new(2.1, 2.1)), ..default()});
+            .insert(Sprite {
+                custom_size: Some(Vec2::new(2.1, 2.1)),
+                ..default()
+            });
         world.insert_resource(Events::<AreaTransitionEvent>::default());
         world.insert_resource(ClearColor::default());
         run_system(&mut world, super::area_startup_system);
@@ -393,15 +392,13 @@ mod tests {
 
     #[test]
     fn area_transition_drawing() {
-        let mut app_builder = get_test_app_builder();
-        app_builder.add_plugin(bevy::render::RenderPlugin::default());
-        app_builder.add_plugin(bevy::sprite::SpritePlugin::default());
-        let mut world = app_builder.world_mut();
+        let mut app = get_test_app();
+        let mut world = &mut app.world;
         world.insert_resource(get_test_areas());
         world
             .spawn()
             .insert(Enemy::default())
-            .insert(Visible {
+            .insert(Visibility {
                 is_visible: false,
                 ..Default::default()
             })
@@ -416,13 +413,13 @@ mod tests {
             Transform::default(),
         )));
         run_system(&mut world, super::area_transition_drawing);
-        let visible = {
-            let mut enemy_query = world.query::<(&Enemy, &Visible)>();
+        let visibility = {
+            let mut enemy_query = world.query::<(&Enemy, &Visibility)>();
             let mut enemy_query_iter = enemy_query.iter(&world);
             let enemy = enemy_query_iter.next().unwrap();
             assert!(enemy_query_iter.next().is_none());
             enemy.1
         };
-        assert_eq!(visible.is_visible, true);
+        assert_eq!(visibility.is_visible, true);
     }
 }
