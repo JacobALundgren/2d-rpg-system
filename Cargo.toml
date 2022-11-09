@@ -1,12 +1,12 @@
 [package]
 name = "rpg_system_2d"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.5.0", features = ["dynamic"] }
+bevy = { version = "0.8.1", features = ["dynamic"] }
 
 [[example]]
 name = "prototype"

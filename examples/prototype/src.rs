@@ -8,13 +8,21 @@ use rpg_system_2d::{
 fn get_game_areas() -> GameAreas {
     let passage_east = Passage::new(
         Transform::from_xyz(1280. / 2. - 15., 0., 1.),
-        Sprite::new(Vec2::new(30., 80.)),
+        Sprite {
+            color: Color::rgb(0., 1., 0.),
+            custom_size: Some(Vec2::new(30., 80.)),
+            ..default()
+        },
         1.into(),
         Transform::from_xyz(-1280. / 2. + 75., 0., 1.),
     );
     let passage_west = Passage::new(
         Transform::from_xyz(-1280. / 2. + 15., 0., 1.),
-        Sprite::new(Vec2::new(30., 80.)),
+        Sprite {
+            color: Color::rgb(0., 1., 0.),
+            custom_size: Some(Vec2::new(30., 80.)),
+            ..default()
+        },
         0.into(),
         Transform::from_xyz(1280. / 2. - 75., 0., 1.),
     );
@@ -25,23 +33,26 @@ fn get_game_areas() -> GameAreas {
 }
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(get_game_areas())
         .add_plugins(DefaultPlugins)
         .add_plugin(AreaPlugin)
         .add_plugin(PlayerPlugin)
-        .add_startup_system(setup.system())
-        .add_startup_system(create_enemy.system())
+        .add_startup_system(setup)
+        .add_startup_system(create_enemy)
         .run();
 }
 
-fn create_enemy(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn create_enemy(mut commands: Commands) {
     commands
         .spawn_bundle(SpriteBundle {
-            material: materials.add(Color::rgb(1., 0., 0.).into()),
             transform: Transform::from_xyz(260., 260., 0.),
-            sprite: Sprite::new(Vec2::new(60., 60.)),
-            visible: Visible {
+            sprite: Sprite {
+                color: Color::rgb(1., 0., 0.),
+                custom_size: Some(Vec2::new(60., 60.)),
+                ..default()
+            },
+            visibility: Visibility {
                 is_visible: false,
                 ..Default::default()
             },
@@ -52,6 +63,5 @@ fn create_enemy(mut commands: Commands, mut materials: ResMut<Assets<ColorMateri
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(Camera2dBundle::default());
 }
