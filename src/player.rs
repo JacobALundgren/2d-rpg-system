@@ -11,7 +11,7 @@ const PLAYER_SIDE: f32 = 60.;
 
 fn setup(mut commands: Commands) {
     commands
-        .spawn_bundle(SpriteBundle {
+        .spawn(SpriteBundle {
             transform: Transform::from_xyz(0., 0., 0.),
             sprite: Sprite {
                 color: Color::rgb(0., 0., 1.),
@@ -25,8 +25,8 @@ fn setup(mut commands: Commands) {
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(setup)
-            .add_system(player_movement_system);
+        app.add_systems(Startup, setup)
+            .add_systems(Update, player_movement_system);
     }
 }
 

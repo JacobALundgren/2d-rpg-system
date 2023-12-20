@@ -14,6 +14,7 @@ impl From<usize> for AreaIdentifier {
     }
 }
 
+#[derive(Resource)]
 pub struct GameAreas {
     areas: Vec<Area>,
 }
@@ -24,7 +25,7 @@ impl GameAreas {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Event, PartialEq)]
 struct AreaTransitionEvent(PassageDestination);
 
 fn area_startup_system(
@@ -39,10 +40,10 @@ impl Plugin for AreaPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(Color::rgb(1., 0., 0.)))
             .add_event::<AreaTransitionEvent>()
-            .add_startup_system(area_startup_system)
-            .add_system(area_transition_check)
-            .add_system(area_transition)
-            .add_system(area_transition_drawing);
+            .add_systems(Startup, area_startup_system)
+            .add_systems(Update, area_transition_check)
+            .add_systems(Update, area_transition)
+            .add_systems(Update, area_transition_drawing);
     }
 }
 
@@ -97,7 +98,7 @@ impl Area {
         background.0 = self.color;
         for passage in &self.passages {
             commands
-                .spawn_bundle(SpriteBundle {
+                .spawn(SpriteBundle {
                     transform: passage.transform,
                     sprite: passage.sprite.clone(),
                     ..Default::default()
@@ -145,7 +146,7 @@ fn area_transition(
     mut background: ResMut<ClearColor>,
     passages: Query<(Entity, &PassageDestination)>,
 ) {
-    if let Some(destination) = ev_area_transition.iter().next() {
+    if let Some(destination) = ev_area_transition.read().next() {
         assert!(destination.0 .0 .0 < game_areas.areas.len());
         for passage in passages.iter() {
             commands.entity(passage.0).despawn();
@@ -161,13 +162,13 @@ fn area_transition_drawing(
     mut ev_area_transition: EventReader<AreaTransitionEvent>,
     mut drawable_query: Query<(&AreaIdentifier, &mut Visibility)>,
 ) {
-    if let Some(destination) = ev_area_transition.iter().next() {
+    if let Some(destination) = ev_area_transition.read().next() {
         for (&area, ref mut visibility) in drawable_query.iter_mut() {
             let entered_area = destination.0 .0;
             if area == entered_area {
-                visibility.is_visible = true;
+                **visibility = Visibility::Visible;
             } else {
-                visibility.is_visible = false;
+                **visibility = Visibility::Hidden;
             }
         }
     }
