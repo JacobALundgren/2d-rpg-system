@@ -37,27 +37,24 @@ fn main() {
     App::new()
         .insert_resource(get_game_areas())
         .add_plugins(DefaultPlugins)
-        .add_plugin(AreaPlugin)
-        .add_plugin(PhysicsPlugin)
-        .add_plugin(PlayerPlugin)
-        .add_startup_system(setup)
-        .add_startup_system(create_enemy)
+        .add_plugins(PhysicsPlugin)
+        .add_plugins(AreaPlugin)
+        .add_plugins(PlayerPlugin)
+        .add_systems(Startup, setup)
+        .add_systems(Startup, create_enemy)
         .run();
 }
 
 fn create_enemy(mut commands: Commands) {
     commands
-        .spawn_bundle(SpriteBundle {
+        .spawn(SpriteBundle {
             transform: Transform::from_xyz(260., 260., 0.),
             sprite: Sprite {
                 color: Color::rgb(1., 0., 0.),
                 custom_size: Some(Vec2::new(60., 60.)),
                 ..default()
             },
-            visibility: Visibility {
-                is_visible: false,
-                ..Default::default()
-            },
+            visibility: Visibility::Hidden,
             ..Default::default()
         })
         .insert(AreaIdentifier(1))
@@ -65,5 +62,5 @@ fn create_enemy(mut commands: Commands) {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 }
