@@ -57,7 +57,7 @@ fn player_movement_system(
         }
 
         direction = direction.normalize_or_zero();
-        direction = direction * SPEED;
-        velocity.linvel = direction.into();
+        direction *= SPEED;
+        velocity.linvel = direction;
     }
 }
