@@ -1,12 +1,11 @@
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 #[derive(Component, Default)]
 pub struct Player {}
 
 pub struct PlayerPlugin;
 
-const WORLD_WIDTH: f32 = 1280.;
-const WORLD_HEIGHT: f32 = 720.;
 const PLAYER_SIDE: f32 = 60.;
 
 fn setup(mut commands: Commands) {
@@ -20,7 +19,12 @@ fn setup(mut commands: Commands) {
             },
             ..Default::default()
         })
-        .insert(Player::default());
+        .insert(Collider::cuboid(PLAYER_SIDE / 2., PLAYER_SIDE / 2.))
+        .insert(ColliderMassProperties::Density(0.))
+        .insert(AdditionalMassProperties::Mass(10.))
+        .insert(Player::default())
+        .insert(RigidBody::Dynamic)
+        .insert(Velocity::default());
 }
 
 impl Plugin for PlayerPlugin {
@@ -31,16 +35,12 @@ impl Plugin for PlayerPlugin {
 }
 
 fn player_movement_system(
-    time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut player_query: Query<(&Player, &mut Transform)>,
+    mut player_query: Query<(&Player, &mut Velocity)>,
 ) {
-    if keyboard_input.get_pressed().len() == 0 {
-        return;
-    }
     const SPEED: f32 = 384.;
 
-    if let Ok((_, mut transform)) = player_query.get_single_mut() {
+    if let Ok((_, mut velocity)) = player_query.get_single_mut() {
         let mut direction = Vec2::ZERO;
 
         if keyboard_input.pressed(KeyCode::D) {
@@ -56,14 +56,8 @@ fn player_movement_system(
             direction.y -= 1.;
         }
 
-        let direction = direction.normalize_or_zero();
-        transform.translation += (direction * SPEED * time.delta_seconds()).extend(0.);
-        let min_point = Vec3::new(
-            -(WORLD_WIDTH - PLAYER_SIDE) / 2.,
-            -(WORLD_HEIGHT - PLAYER_SIDE) / 2.,
-            0.,
-        );
-        let max_point = -min_point;
-        transform.translation = transform.translation.clamp(min_point, max_point);
+        direction = direction.normalize_or_zero();
+        direction *= SPEED;
+        velocity.linvel = direction;
     }
 }

@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use rpg_system_2d::{
     area::{Area, AreaIdentifier, AreaPlugin, GameAreas, Passage},
     enemy::Enemy,
+    physics::PhysicsPlugin,
     player::PlayerPlugin,
 };
 
@@ -36,6 +37,7 @@ fn main() {
     App::new()
         .insert_resource(get_game_areas())
         .add_plugins(DefaultPlugins)
+        .add_plugins(PhysicsPlugin)
         .add_plugins(AreaPlugin)
         .add_plugins(PlayerPlugin)
         .add_systems(Startup, setup)
