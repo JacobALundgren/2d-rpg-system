@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use rpg_system_2d::{
     area::{Area, AreaIdentifier, AreaPlugin, GameAreas, Passage, PassageDestination},
+    attack::AttackPlugin,
     enemy::Enemy,
     physics::PhysicsPlugin,
     player::PlayerPlugin,
@@ -38,6 +39,7 @@ fn main() {
         .add_plugins(PhysicsPlugin)
         .add_plugins(AreaPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(AttackPlugin)
         .add_systems(Startup, setup)
         .add_systems(Startup, create_enemy)
         .run();
