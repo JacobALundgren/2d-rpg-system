@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_rapier2d::prelude::*;
 use rpg_system_2d::{
     area::{Area, AreaIdentifier, AreaPlugin, GameAreas, Passage, PassageDestination},
     attack::AttackPlugin,
@@ -46,17 +47,20 @@ fn main() {
 }
 
 fn create_enemy(mut commands: Commands) {
+    const ENEMY_SIDE: f32 = 60.;
     commands
         .spawn(SpriteBundle {
             transform: Transform::from_xyz(260., 260., 0.),
             sprite: Sprite {
                 color: Color::srgb(1., 0., 0.),
-                custom_size: Some(Vec2::new(60., 60.)),
+                custom_size: Some(Vec2::new(ENEMY_SIDE, ENEMY_SIDE)),
                 ..default()
             },
             visibility: Visibility::Hidden,
             ..Default::default()
         })
+        .insert(Collider::cuboid(ENEMY_SIDE / 2.0, ENEMY_SIDE / 2.0))
+        .insert(ActiveEvents::COLLISION_EVENTS)
         .insert(AreaIdentifier(1))
         .insert(Enemy);
 }

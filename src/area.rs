@@ -60,6 +60,7 @@ pub struct PassageBundle {
     active_events: ActiveEvents,
     collider: Collider,
     destination: PassageDestination,
+    sensor: Sensor,
 }
 
 impl Passage {
@@ -84,6 +85,7 @@ impl Passage {
                 self.sprite.custom_size.unwrap().y / 2.,
             ),
             destination: self.destination,
+            sensor: Sensor,
         }
     }
 }
