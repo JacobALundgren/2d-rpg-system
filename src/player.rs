@@ -61,3 +61,16 @@ fn player_movement_system(
         velocity.linvel = direction;
     }
 }
+
+#[cfg(test)]
+pub mod test_utils {
+    use bevy::prelude::*;
+
+    pub struct PlayerPlugin;
+
+    impl Plugin for PlayerPlugin {
+        fn build(&self, app: &mut bevy::prelude::App) {
+            app.add_systems(Startup, super::setup);
+        }
+    }
+}
