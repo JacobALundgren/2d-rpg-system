@@ -13,7 +13,7 @@ fn setup(mut commands: Commands) {
         .spawn(SpriteBundle {
             transform: Transform::from_xyz(0., 0., 0.),
             sprite: Sprite {
-                color: Color::rgb(0., 0., 1.),
+                color: Color::srgb(0., 0., 1.),
                 custom_size: Some(Vec2::new(PLAYER_SIDE, PLAYER_SIDE)),
                 ..default()
             },

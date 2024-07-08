@@ -38,7 +38,7 @@ fn area_startup_system(
 
 impl Plugin for AreaPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ClearColor(Color::rgb(1., 0., 0.)))
+        app.insert_resource(ClearColor(Color::srgb(1., 0., 0.)))
             .add_event::<AreaTransitionEvent>()
             .add_systems(Startup, area_startup_system)
             .add_systems(Update, area_transition_check)
@@ -205,7 +205,7 @@ mod tests {
         let mut app = get_test_app();
         app.add_plugins(player::test_utils::PlayerPlugin);
         {
-            let world = &mut app.world;
+            let world = app.world_mut();
             if let Some(mut x) = world
                 .query_filtered::<&mut Transform, With<Player>>()
                 .iter_mut(world)
@@ -227,7 +227,7 @@ mod tests {
         }
         app.update();
         let area_transition_events = app
-            .world
+            .world()
             .get_resource::<Events<AreaTransitionEvent>>()
             .unwrap();
         let mut reader = area_transition_events.get_reader();
@@ -247,9 +247,9 @@ mod tests {
         let mut app = get_test_app();
         app.add_plugins(player::test_utils::PlayerPlugin);
         if let Some(mut x) = app
-            .world
+            .world_mut()
             .query_filtered::<&mut Transform, With<Player>>()
-            .iter_mut(&mut app.world)
+            .iter_mut(app.world_mut())
             .next()
         {
             *x = Transform::from_xyz(10., 10., 1.);
@@ -264,7 +264,7 @@ mod tests {
             destination1,
         );
         let destination2 = PassageDestination(2.into(), Transform::from_xyz(25., 25., 10.));
-        app.world.spawn(passage1.bundle());
+        app.world_mut().spawn(passage1.bundle());
         let passage2 = Passage::new(
             Transform::from_xyz(8., 8., 100.),
             Sprite {
@@ -273,13 +273,13 @@ mod tests {
             },
             destination2,
         );
-        app.world.spawn(passage2.bundle());
-        app.world
+        app.world_mut().spawn(passage2.bundle());
+        app.world_mut()
             .insert_resource(Events::<AreaTransitionEvent>::default());
         app.add_systems(Last, super::area_transition_check);
         app.update();
         let area_transition_events = app
-            .world
+            .world_mut()
             .get_resource::<Events<AreaTransitionEvent>>()
             .unwrap();
         let mut reader = area_transition_events.get_reader();
@@ -293,7 +293,7 @@ mod tests {
         let passage_out1 = Passage {
             transform: Transform::from_xyz(12., 12., 100.),
             sprite: Sprite {
-                color: Color::rgb(0., 1., 0.),
+                color: Color::srgb(0., 1., 0.),
                 custom_size: Some(Vec2::new(2., 2.)),
                 ..default()
             },
@@ -302,7 +302,7 @@ mod tests {
         let passage_out2 = Passage {
             transform: Transform::from_xyz(92., 92., 100.),
             sprite: Sprite {
-                color: Color::rgb(0., 1., 0.),
+                color: Color::srgb(0., 1., 0.),
                 custom_size: Some(Vec2::new(2., 2.)),
                 ..default()
             },
@@ -311,7 +311,7 @@ mod tests {
         let passage_in1 = Passage {
             transform: Transform::from_xyz(60., 60., 100.),
             sprite: Sprite {
-                color: Color::rgb(0., 1., 0.),
+                color: Color::srgb(0., 1., 0.),
                 custom_size: Some(Vec2::new(2., 2.)),
                 ..default()
             },
@@ -320,7 +320,7 @@ mod tests {
         let passage_in2 = Passage {
             transform: Transform::from_xyz(160., 160., 100.),
             sprite: Sprite {
-                color: Color::rgb(0., 1., 0.),
+                color: Color::srgb(0., 1., 0.),
                 custom_size: Some(Vec2::new(2., 2.)),
                 ..default()
             },
@@ -329,11 +329,11 @@ mod tests {
         GameAreas {
             areas: [
                 Area {
-                    color: Color::rgb(0.125, 0.82, 0.325),
+                    color: Color::srgb(0.125, 0.82, 0.325),
                     passages: vec![passage_out1, passage_out2],
                 },
                 Area {
-                    color: Color::rgb(0.251, 0.521, 0.382),
+                    color: Color::srgb(0.251, 0.521, 0.382),
                     passages: vec![passage_in1, passage_in2],
                 },
             ]
@@ -365,19 +365,19 @@ mod tests {
     #[test]
     fn area_transition() {
         let mut app = get_test_app();
-        app.world.insert_resource(get_test_areas());
+        app.world_mut().insert_resource(get_test_areas());
         app.add_plugins(player::test_utils::PlayerPlugin);
         if let Some(mut x) = app
-            .world
+            .world_mut()
             .query_filtered::<&mut Transform, With<Player>>()
-            .iter_mut(&mut app.world)
+            .iter_mut(app.world_mut())
             .next()
         {
             *x = Transform::from_xyz(10., 10., 1.);
         }
-        app.world
+        app.world_mut()
             .insert_resource(Events::<AreaTransitionEvent>::default());
-        app.world.insert_resource(ClearColor::default());
+        app.world_mut().insert_resource(ClearColor::default());
         app.add_systems(Startup, super::area_startup_system);
         app.add_systems(
             Last,
@@ -385,29 +385,34 @@ mod tests {
         );
         app.update();
         let player = {
-            let mut player_query = app.world.query::<(&Player, &Transform)>();
-            let mut player_query_iter = player_query.iter(&app.world);
+            let mut player_query = app.world_mut().query::<(&Player, &Transform)>();
+            let mut player_query_iter = player_query.iter(app.world());
             let player = player_query_iter.next().unwrap();
             assert!(player_query_iter.next().is_none());
             player
         };
-        let areas = &app.world.get_resource::<GameAreas>().unwrap().areas.clone();
+        let areas = &app
+            .world()
+            .get_resource::<GameAreas>()
+            .unwrap()
+            .areas
+            .clone();
         assert_eq!(*player.1, areas[0].passages[0].destination.1);
-        check_area_is_loaded(&mut app.world, &areas[1]);
+        check_area_is_loaded(app.world_mut(), &areas[1]);
     }
 
     #[test]
     fn area_transition_drawing() {
         let mut app = get_test_app();
         app.insert_resource(get_test_areas());
-        app.world
+        app.world_mut()
             .spawn(Enemy)
             .insert(Visibility::Hidden)
             .insert(Transform::from_xyz(40., 40., 1.))
             .insert(AreaIdentifier(1));
         app.insert_resource(Events::<AreaTransitionEvent>::default());
         let mut area_transition_events = app
-            .world
+            .world_mut()
             .get_resource_mut::<Events<AreaTransitionEvent>>()
             .unwrap();
         area_transition_events.send(AreaTransitionEvent(PassageDestination(
@@ -417,8 +422,8 @@ mod tests {
         app.add_systems(Update, super::area_transition_drawing);
         app.update();
         let visibility = {
-            let mut enemy_query = app.world.query::<(&Enemy, &Visibility)>();
-            let mut enemy_query_iter = enemy_query.iter(&app.world);
+            let mut enemy_query = app.world_mut().query::<(&Enemy, &Visibility)>();
+            let mut enemy_query_iter = enemy_query.iter(app.world());
             let enemy = enemy_query_iter.next().unwrap();
             assert!(enemy_query_iter.next().is_none());
             enemy.1
